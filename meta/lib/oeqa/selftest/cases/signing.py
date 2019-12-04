@@ -221,4 +221,10 @@ class LockedSignatures(OESelftestTestCase):
         patt = r'The %s:do_package sig is computed to be \S+, but the sig is locked to \S+ in SIGGEN_LOCKEDSIGS\S+' % test_recipe
         found_warn = re.search(patt, ret.output)
 
-        self.assertIsNotNone(found_warn, "Didn't find the expected warning message. Output: %s" % ret.output)
+        extradebug = ""
+        if not found_warn:
+            extradebug = bitbake(test_recipe + " -e").output
+            extradebug += bitbake(test_recipe + " -S none").output
+            extradebug += runCmd('ls -la tmp/stamps/*/ed/*').output
+
+        self.assertIsNotNone(found_warn, "Didn't find the expected warning message. Output: %s, Extra debug: %s" % (ret.output, extradebug))
