@@ -24,11 +24,15 @@ import pickle
 from multiprocessing import Process
 import shlex
 import pprint
+from collections import namedtuple
 
 bblogger = logging.getLogger("BitBake")
 logger = logging.getLogger("BitBake.RunQueue")
 
 __find_sha256__ = re.compile( r'(?i)(?<![a-z0-9])[a-f0-9]{64}(?![a-z0-9])' )
+
+tidcache = {}
+TID = namedtuple('TID', 'mc fn taskname mcfn')
 
 def fn_from_tid(tid):
      return tid.rsplit(":", 1)[0]
@@ -42,10 +46,17 @@ def mc_from_tid(tid):
     return ""
 
 def split_tid(tid):
+    if tid in tidcache:
+        entry = tidcache[tid]
+        return (entry.mc, entry.fn, entry.taskname)
     (mc, fn, taskname, _) = split_tid_mcfn(tid)
     return (mc, fn, taskname)
 
 def split_tid_mcfn(tid):
+    if tid in tidcache:
+        entry = tidcache[tid]
+        return (entry.mc, entry.fn, entry.taskname, entry.mcfn)
+
     if tid.startswith('mc:'):
         elems = tid.split(':')
         mc = elems[1]
@@ -53,11 +64,13 @@ def split_tid_mcfn(tid):
         taskname = elems[-1]
         mcfn = "mc:" + mc + ":" + fn
     else:
-        tid = tid.rsplit(":", 1)
+        tid2 = tid.rsplit(":", 1)
         mc = ""
-        fn = tid[0]
-        taskname = tid[1]
+        fn = tid2[0]
+        taskname = tid2[1]
         mcfn = fn
+
+    tidcache[tid] = TID(mc, fn, taskname, mcfn)
 
     return (mc, fn, taskname, mcfn)
 
