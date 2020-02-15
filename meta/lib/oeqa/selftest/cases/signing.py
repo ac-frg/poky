@@ -223,8 +223,13 @@ class LockedSignatures(OESelftestTestCase):
 
         extradebug = ""
         if not found_warn:
-            extradebug = bitbake(test_recipe + " -e").output
+            #extradebug = bitbake(test_recipe + " -e").output
+            extradebug = runCmd('cat bitbake-cookerdaemon.log').output
             extradebug += bitbake(test_recipe + " -S none").output
             extradebug += runCmd('ls -la tmp/stamps/*/ed/*').output
+            ret2 = bitbake(test_recipe)
+            found_warn2 = re.search(patt, ret2.output)
+            extradebug += "\nFound %s\n\n" % str(found_warn2)
+            extradebug += ret2.output
 
         self.assertIsNotNone(found_warn, "Didn't find the expected warning message. Output: %s, Extra debug: %s" % (ret.output, extradebug))
